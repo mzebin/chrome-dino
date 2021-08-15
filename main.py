@@ -24,6 +24,140 @@ FONT_1 = pygame.font.Font(font_path, 48)
 FONT_2 = pygame.font.Font(font_path, 16)
 
 
+class Track:
+    # Image of the track.
+    IMAGE = pygame.image.load("images/others/track.png")
+
+    # Speed of the track.
+    SPEED = 25
+
+    def __init__(self):
+        # Speed of the track.
+        self.track_speed = self.SPEED
+
+        # position of the track.
+        self.x = 0
+        self.y = 375
+
+        # The width of the track.
+        self.width = self.IMAGE.get_width()
+
+    @property
+    def positions(self):
+        return [(self.x, self.y), (self.x + self.width, self.y)]
+    
+    def update(self):
+        # Resetting the x position.
+        if self.x <= -self.width:
+            self.x = 0
+        
+        # Decrementing the x position.
+        self.x -= self.track_speed
+    
+    def draw(self):
+        SCREEN.blit(self.IMAGE, self.positions[0])
+        SCREEN.blit(self.IMAGE, self.positions[1])
+
+
+class Dinosaur:
+    # Images of Dinosaur running.
+    RUNNING_IMAGES = [
+        pygame.image.load("images/dino/dino_run_1.png"),
+        pygame.image.load("images/dino/dino_run_2.png"),
+    ]
+
+    # Images of Dinosaur Ducking.
+    DUCKING_IMAGES = [
+        pygame.image.load("images/dino/dino_duck_1.png"),
+        pygame.image.load("images/dino/dino_duck_2.png"),
+    ]
+
+    # Image of Dinosaur Jumping.
+    JUMPING_IMAGE = pygame.image.load("images/dino/dino_jump.png")
+
+    # The position of the dinosaur and the
+    # velocity of the jumping dinosaur.
+    X_POS = 80
+    Y_POS = 310
+    JUMP_VEL = 8.5
+
+    def __init__(self):
+        # Dinosaur images.
+        self.dino_running_images = cycle(self.RUNNING_IMAGES)
+        self.dino_ducking_images = cycle(self.DUCKING_IMAGES)
+
+        # Setting the initial image.
+        self.image = self.RUNNING_IMAGES[0]
+        self.rect = self.image.get_rect()
+
+        # Changing the position of the image.
+        self.rect.x = self.X_POS
+        self.rect.y = self.Y_POS
+
+        # Jumping velocity.
+        self.jump_velocity = self.JUMP_VEL
+
+        # Flags.
+        self.running = True
+        self.ducking = False
+        self.jumping = False
+
+        self.change_image = False
+    
+    def update(self, keys_pressed):
+        if not self.jumping:
+            if keys_pressed[pygame.K_UP] or keys_pressed[K_SPACE]:
+                self.running = False
+                self.ducking = False
+                self.jumping = True
+            elif keys_pressed[pygame.K_DOWN]:
+                self.running = False
+                self.ducking = True
+                self.jumping = False
+            else:
+                self.running = True
+                self.ducking = False
+                self.jumping = False
+
+        if self.running:
+            self.run()
+        elif self.ducking:
+            self.duck()
+        elif self.jumping:
+            self.jump()
+    
+    def run(self):
+        if self.change_image:
+            self.image = next(self.dino_running_images)
+
+        self.rect = self.image.get_rect()
+        self.rect.x = self.X_POS
+        self.rect.y = self.Y_POS
+        self.change_image = not self.change_image
+    
+    def duck(self):
+        if self.change_image:
+            self.image = next(self.dino_ducking_images)
+
+        self.rect = self.image.get_rect()
+        self.rect.x = self.X_POS
+        self.rect.y = self.Y_POS + 35
+        self.change_image = not self.change_image
+
+    def jump(self):
+        self.image = self.JUMPING_IMAGE
+        if self.jumping:
+            self.rect.y -= (self.jump_velocity * 4)
+            self.jump_velocity -= 0.85
+        
+        if self.jump_velocity < -self.JUMP_VEL:
+            self.jumping = False
+            self.jump_velocity = self.JUMP_VEL
+
+    def draw(self):
+        SCREEN.blit(self.image, self.rect)
+
+
 class Game:
     DINO_START_IMAGE = pygame.image.load("images/dino/dino_start.png")
 
@@ -35,22 +169,31 @@ class Game:
         # Pygame clock.
         self.clock = pygame.time.Clock()
 
+        # Game objects.
+        self.track = Track()
+
+        self.dino = Dinosaur()
+
     def update_score(self):
         # Updating the score.
         self.score += 1
 
         # Updating the high score.
         self.high_score = max(self.high_score, self.score)
+    
+    @property
+    def score_text(self):
+        return "High Score: {} Score: {}".format(self.high_score, self.score)
 
     def display_score(self):
-        score_text = "High Score: {} Score: {}".format(
-            self.high_score,
-            self.score,
-        )
+        # Creating score.
+        score = FONT_2.render(self.score_text, True, GREY)
 
-        score = FONT_2.render(score_text, True, GREY)
+        # Changing the position of the score text.
         score_rect = score.get_rect()
         score_rect.center = (950, 50)
+
+        # Displaying the score.
         SCREEN.blit(score, score_rect)
 
     def start_screen(self, restart=True):
@@ -103,6 +246,14 @@ class Game:
             # Displaying the score.
             self.update_score()
             self.display_score()
+
+            # Displaying the track.
+            self.track.update()
+            self.track.draw()
+
+            # Displaying the dinosaur.
+            self.dino.update(pygame.key.get_pressed())
+            self.dino.draw()
 
             # Checking for events.
             for event in pygame.event.get():
