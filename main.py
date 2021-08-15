@@ -59,6 +59,39 @@ class Track:
         SCREEN.blit(self.IMAGE, self.positions[1])
 
 
+class Cloud:
+    # Images of the cloud.
+    IMAGES = [
+        pygame.image.load("images/others/cloud_1.png"),
+        pygame.image.load("images/others/cloud_2.png"),
+    ]
+
+    # Speed of the cloud.
+    SPEED = 20
+
+    def __init__(self):
+        # Speed of the cloud.
+        self.speed =  self.SPEED
+
+        # Setting up a clouds.
+        self.image = random.choice(self.IMAGES)
+        self.width = self.image.get_width()
+        self.x = SCREEN_WIDTH + random.randint(0, 250)
+        self.y = random.randint(50, 250)
+    
+    def update(self):
+        self.x -= self.speed
+        if self.x < -self.width * random.randint(1, 3):
+            # Resetting the cloud.
+            self.image = random.choice(self.IMAGES)
+            self.width = self.image.get_width()
+            self.x = SCREEN_WIDTH + random.randint(0, 250)
+            self.y = random.randint(50, 250)
+    
+    def draw(self):
+        SCREEN.blit(self.image, (self.x, self.y))
+
+
 class Dinosaur:
     # Images of Dinosaur running.
     RUNNING_IMAGES = [
@@ -79,7 +112,7 @@ class Dinosaur:
     # velocity of the jumping dinosaur.
     X_POS = 80
     Y_POS = 310
-    JUMP_VEL = 8.5
+    JUMP_VEL = 10
 
     def __init__(self):
         # Dinosaur images.
@@ -106,7 +139,7 @@ class Dinosaur:
     
     def update(self, keys_pressed):
         if not self.jumping:
-            if keys_pressed[pygame.K_UP] or keys_pressed[K_SPACE]:
+            if keys_pressed[pygame.K_UP] or keys_pressed[pygame.K_SPACE]:
                 self.running = False
                 self.ducking = False
                 self.jumping = True
@@ -148,7 +181,7 @@ class Dinosaur:
         self.image = self.JUMPING_IMAGE
         if self.jumping:
             self.rect.y -= (self.jump_velocity * 4)
-            self.jump_velocity -= 0.85
+            self.jump_velocity -= 1
         
         if self.jump_velocity < -self.JUMP_VEL:
             self.jumping = False
@@ -171,6 +204,7 @@ class Game:
 
         # Game objects.
         self.track = Track()
+        self.cloud = Cloud()
 
         self.dino = Dinosaur()
 
@@ -243,13 +277,17 @@ class Game:
             # Filling the screen with white colour.
             SCREEN.fill(WHITE)
 
-            # Displaying the score.
-            self.update_score()
-            self.display_score()
-
             # Displaying the track.
             self.track.update()
             self.track.draw()
+
+            # Displaying the cloud.
+            self.cloud.update()
+            self.cloud.draw()
+
+            # Displaying the score.
+            self.update_score()
+            self.display_score()
 
             # Displaying the dinosaur.
             self.dino.update(pygame.key.get_pressed())
