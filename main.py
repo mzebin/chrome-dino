@@ -32,6 +32,16 @@ class Game:
         self.score = 0
         self.high_score = 0
 
+        # Pygame clock.
+        self.clock = pygame.time.Clock()
+
+    def update_score(self):
+        # Updating the score.
+        self.score += 1
+
+        # Updating the high score.
+        self.high_score = max(self.high_score, self.score)
+
     def display_score(self):
         score_text = "High Score: {} Score: {}".format(
             self.high_score,
@@ -86,7 +96,22 @@ class Game:
             pygame.display.update()
 
     def mainloop(self):
-        pass
+        while True:
+            # Filling the screen with white colour.
+            SCREEN.fill(WHITE)
+
+            # Displaying the score.
+            self.update_score()
+            self.display_score()
+
+            # Checking for events.
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    sys.exit()
+
+            # Updating the display.
+            self.clock.tick(30)
+            pygame.display.update()
 
 
 if __name__ == "__main__":
