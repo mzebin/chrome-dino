@@ -128,14 +128,14 @@ class Dinosaur:
         self.rect.y = self.Y_POS
 
         # Jumping velocity.
-        self.jump_velocity = self.JUMP_VEL
+        self.jump_vel = self.JUMP_VEL
 
         # Flags.
         self.running = True
         self.ducking = False
         self.jumping = False
 
-        self.change_image = False
+        self.change_image = 0
     
     def update(self, keys_pressed):
         if not self.jumping:
@@ -160,7 +160,7 @@ class Dinosaur:
             self.jump()
     
     def run(self):
-        if self.change_image:
+        if self.change_image % 5 == 0:
             self.image = next(self.dino_running_images)
 
         self.rect = self.image.get_rect()
@@ -169,7 +169,7 @@ class Dinosaur:
         self.change_image = not self.change_image
     
     def duck(self):
-        if self.change_image:
+        if self.change_image % 5 == 0:
             self.image = next(self.dino_ducking_images)
 
         self.rect = self.image.get_rect()
@@ -180,15 +180,77 @@ class Dinosaur:
     def jump(self):
         self.image = self.JUMPING_IMAGE
         if self.jumping:
-            self.rect.y -= (self.jump_velocity * 4)
-            self.jump_velocity -= 1
+            self.rect.y -= (self.jump_vel * 4)
+            self.jump_vel -= 1
         
-        if self.jump_velocity < -self.JUMP_VEL:
+        if self.jump_vel < -self.JUMP_VEL:
             self.jumping = False
-            self.jump_velocity = self.JUMP_VEL
+            self.jump_vel = self.JUMP_VEL
 
     def draw(self):
         SCREEN.blit(self.image, self.rect)
+
+
+class Obstacle:
+    # Speed of the obstacle.
+    SPEED = 25
+
+    def __init__(self, images, image_type):
+        self.image = images[image_type]
+        self.rect = self.image.get_rect()
+
+        self.rect.x = SCREEN_WIDTH + random.randint(0, 50)
+        self.rect.y = 390 - self.image.get_height()
+    
+    def update(self):
+        self.rect.x -= self.SPEED
+        if self.rect.x < -self.rect.width:
+            self.OBSTACLE = None
+    
+    def draw(self):
+        SCREEN.blit(self.image, self.rect)
+
+
+class Cactus(Obstacle):
+    # Images of the cactus.
+    IMAGES = [
+        pygame.image.load("images/obstacles/cactus_1.png"),
+        pygame.image.load("images/obstacles/cactus_2.png"),
+        pygame.image.load("images/obstacles/cactus_3.png"),
+        pygame.image.load("images/obstacles/cactus_4.png"),
+        pygame.image.load("images/obstacles/cactus_5.png"),
+        pygame.image.load("images/obstacles/cactus_6.png"),
+    ]
+
+    def __init__(self):
+        super().__init__(self.IMAGES, random.randint(0, 5))
+
+
+class Bird(Obstacle):
+    # Images of the bird.
+    IMAGES = [
+        pygame.image.load("images/obstacles/bird_1.png"),
+        pygame.image.load("images/obstacles/bird_2.png"),
+    ]
+
+    def __init__(self):
+        super().__init__(self.IMAGES, 0)
+
+        # Create a cycle of images.
+        self.images = cycle(self.IMAGES)
+
+        # Changing the position of the bird.
+        self.rect.y = 360 - random.randint(1, 3) * self.image.get_height()
+
+        # Flags.
+        self.change_image = 0
+    
+    def update(self):
+        if self.change_image % 5 == 0:
+            self.image = next(self.images)
+        
+        self.change_image += 1
+        super().update()
 
 
 class Game:
@@ -202,11 +264,15 @@ class Game:
         # Pygame clock.
         self.clock = pygame.time.Clock()
 
+        # Speed of the game.
+        self.speed = 20
+
         # Game objects.
         self.track = Track()
         self.cloud = Cloud()
 
         self.dino = Dinosaur()
+        self.obstacle = None
 
     def update_score(self):
         # Updating the score.
@@ -214,6 +280,10 @@ class Game:
 
         # Updating the high score.
         self.high_score = max(self.high_score, self.score)
+
+        # Changing the game speed.
+        if self.score % 100 == 0:
+            self.speed += 1
     
     @property
     def score_text(self):
@@ -263,8 +333,13 @@ class Game:
                 # Getting mouse button clicks.
                 clicks = pygame.mouse.get_pressed(3)
                 if event.type == pygame.KEYDOWN or clicks[0]:
-                    # Reset the score.
+                    # Reset the score and speed.
                     self.score = 0
+                    self.speed = 20
+
+                    # Reset the dino and obstacle.
+                    self.dino = Dinosaur()
+                    self.obstacle = None
 
                     # Running the mainloop
                     self.mainloop()
@@ -276,6 +351,13 @@ class Game:
         while True:
             # Filling the screen with white colour.
             SCREEN.fill(WHITE)
+
+            # Creating an obstacle.
+            if self.obstacle is None or self.obstacle.rect.x < -25:
+                if self.score < 250:
+                    self.obstacle = Cactus()
+                else:
+                    self.obstacle = random.choice([Cactus, Bird])()
 
             # Displaying the track.
             self.track.update()
@@ -289,9 +371,18 @@ class Game:
             self.update_score()
             self.display_score()
 
+            # Displaying the obstacle.
+            self.obstacle.update()
+            self.obstacle.draw()
+
             # Displaying the dinosaur.
             self.dino.update(pygame.key.get_pressed())
             self.dino.draw()
+
+            # Checking for collisions.
+            if self.dino.rect.colliderect(self.obstacle.rect):
+                pygame.time.delay(2000)
+                self.start_screen()
 
             # Checking for events.
             for event in pygame.event.get():
@@ -299,7 +390,7 @@ class Game:
                     sys.exit()
 
             # Updating the display.
-            self.clock.tick(30)
+            self.clock.tick(self.speed)
             pygame.display.update()
 
 
