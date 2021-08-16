@@ -199,11 +199,14 @@ class Obstacle:
         self.image = images[image_type]
         self.rect = self.image.get_rect()
 
+        # Speed of the obstacle.
+        self.speed = self.SPEED
+
         self.rect.x = SCREEN_WIDTH + random.randint(0, 50)
         self.rect.y = 390 - self.image.get_height()
     
     def update(self):
-        self.rect.x -= self.SPEED
+        self.rect.x -= self.speed
         if self.rect.x < -self.rect.width:
             self.OBSTACLE = None
     
@@ -241,6 +244,9 @@ class Bird(Obstacle):
 
         # Changing the position of the bird.
         self.rect.y = 360 - random.randint(1, 3) * self.image.get_height()
+
+        # Changing the speed of the bird.
+        self.speed = 30
 
         # Flags.
         self.change_image = 0
@@ -367,10 +373,6 @@ class Game:
             self.cloud.update()
             self.cloud.draw()
 
-            # Displaying the score.
-            self.update_score()
-            self.display_score()
-
             # Displaying the obstacle.
             self.obstacle.update()
             self.obstacle.draw()
@@ -383,6 +385,10 @@ class Game:
             if self.dino.rect.colliderect(self.obstacle.rect):
                 pygame.time.delay(2000)
                 self.start_screen()
+
+            # Displaying the score.
+            self.update_score()
+            self.display_score()
 
             # Checking for events.
             for event in pygame.event.get():
